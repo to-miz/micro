@@ -280,12 +280,12 @@ func (b *Buffer) Start() Loc {
 
 // End returns the location of the last character in the buffer
 func (b *Buffer) End() Loc {
-	return Loc{utf8.RuneCount(b.lines[b.NumLines-1]), b.NumLines - 1}
+	return Loc{utf8.RuneCount(b.lines[b.NumLines-1].text), b.NumLines - 1}
 }
 
 // Line returns a single line
 func (b *Buffer) Line(n int) string {
-	return string(b.lines[n])
+	return string(b.lines[n].text)
 }
 
 // Lines returns an array of strings containing the lines from start to end
@@ -293,7 +293,7 @@ func (b *Buffer) Lines(start, end int) []string {
 	lines := b.lines[start:end]
 	var slice []string
 	for _, line := range lines {
-		slice = append(slice, string(line))
+		slice = append(slice, string(line.text))
 	}
 	return slice
 }

@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"unicode/utf8"
+
+	"github.com/zyedidia/tcell"
 )
 
 func runeToByteIndex(n int, txt []byte) int {
@@ -26,10 +28,21 @@ func runeToByteIndex(n int, txt []byte) int {
 	return count
 }
 
+type Line struct {
+	text   []byte
+	colors []tcell.Style
+}
+
 // A LineArray simply stores and array of lines and makes it easy to insert
 // and delete in it
 type LineArray struct {
-	lines [][]byte
+	lines []Line
+}
+
+func (la *LineArray) setLines(text [][]byte) {
+	for i, line := range la.lines {
+		line.text = text[i]
+	}
 }
 
 // NewLineArray returns a new line array from an array of bytes
@@ -37,10 +50,11 @@ func NewLineArray(text []byte) *LineArray {
 	la := new(LineArray)
 	// Split the bytes into lines
 	split := bytes.Split(text, []byte("\n"))
-	la.lines = make([][]byte, len(split))
+	la.lines = make([]Line, len(split))
+	// la.setLines(make([][]byte, len(split)))
 	for i := range split {
-		la.lines[i] = make([]byte, len(split[i]))
-		copy(la.lines[i], split[i])
+		la.lines[i].text = make([]byte, len(split[i]))
+		copy(la.lines[i].text, split[i])
 	}
 
 	return la
@@ -48,19 +62,24 @@ func NewLineArray(text []byte) *LineArray {
 
 // Returns the String representation of the LineArray
 func (la *LineArray) String() string {
-	return string(bytes.Join(la.lines, []byte("\n")))
+	str := ""
+	for _, line := range la.lines {
+		str += string(line.text) + "\n"
+	}
+	return str
+	// return string(bytes.Join(la.lines, []byte("\n")))
 }
 
 // NewlineBelow adds a newline below the given line number
 func (la *LineArray) NewlineBelow(y int) {
-	la.lines = append(la.lines, []byte(" "))
+	la.lines = append(la.lines, Line{[]byte(" "), []tcell.Style{}})
 	copy(la.lines[y+2:], la.lines[y+1:])
-	la.lines[y+1] = []byte("")
+	la.lines[y+1] = Line{[]byte(""), []tcell.Style{}}
 }
 
 // inserts a byte array at a given location
 func (la *LineArray) insert(pos Loc, value []byte) {
-	x, y := runeToByteIndex(pos.X, la.lines[pos.Y]), pos.Y
+	x, y := runeToByteIndex(pos.X, la.lines[pos.Y].text), pos.Y
 	// x, y := pos.x, pos.y
 	for i := 0; i < len(value); i++ {
 		if value[i] == '\n' {
@@ -76,31 +95,31 @@ func (la *LineArray) insert(pos Loc, value []byte) {
 
 // inserts a byte at a given location
 func (la *LineArray) insertByte(pos Loc, value byte) {
-	la.lines[pos.Y] = append(la.lines[pos.Y], 0)
-	copy(la.lines[pos.Y][pos.X+1:], la.lines[pos.Y][pos.X:])
-	la.lines[pos.Y][pos.X] = value
+	la.lines[pos.Y].text = append(la.lines[pos.Y].text, 0)
+	copy(la.lines[pos.Y].text[pos.X+1:], la.lines[pos.Y].text[pos.X:])
+	la.lines[pos.Y].text[pos.X] = value
 }
 
 // JoinLines joins the two lines a and b
 func (la *LineArray) JoinLines(a, b int) {
-	la.insert(Loc{len(la.lines[a]), a}, la.lines[b])
+	la.insert(Loc{len(la.lines[a].text), a}, la.lines[b].text)
 	la.DeleteLine(b)
 }
 
 // Split splits a line at a given position
 func (la *LineArray) Split(pos Loc) {
 	la.NewlineBelow(pos.Y)
-	la.insert(Loc{0, pos.Y + 1}, la.lines[pos.Y][pos.X:])
+	la.insert(Loc{0, pos.Y + 1}, la.lines[pos.Y].text[pos.X:])
 	la.DeleteToEnd(Loc{pos.X, pos.Y})
 }
 
 // removes from start to end
 func (la *LineArray) remove(start, end Loc) string {
 	sub := la.Substr(start, end)
-	startX := runeToByteIndex(start.X, la.lines[start.Y])
-	endX := runeToByteIndex(end.X, la.lines[end.Y])
+	startX := runeToByteIndex(start.X, la.lines[start.Y].text)
+	endX := runeToByteIndex(end.X, la.lines[end.Y].text)
 	if start.Y == end.Y {
-		la.lines[start.Y] = append(la.lines[start.Y][:startX], la.lines[start.Y][endX:]...)
+		la.lines[start.Y].text = append(la.lines[start.Y].text[:startX], la.lines[start.Y].text[endX:]...)
 	} else {
 		for i := start.Y + 1; i <= end.Y-1; i++ {
 			la.DeleteLine(start.Y + 1)
@@ -114,12 +133,12 @@ func (la *LineArray) remove(start, end Loc) string {
 
 // DeleteToEnd deletes from the end of a line to the position
 func (la *LineArray) DeleteToEnd(pos Loc) {
-	la.lines[pos.Y] = la.lines[pos.Y][:pos.X]
+	la.lines[pos.Y].text = la.lines[pos.Y].text[:pos.X]
 }
 
 // DeleteFromStart deletes from the start of a line to the position
 func (la *LineArray) DeleteFromStart(pos Loc) {
-	la.lines[pos.Y] = la.lines[pos.Y][pos.X+1:]
+	la.lines[pos.Y].text = la.lines[pos.Y].text[pos.X+1:]
 }
 
 // DeleteLine deletes the line number
@@ -129,21 +148,21 @@ func (la *LineArray) DeleteLine(y int) {
 
 // DeleteByte deletes the byte at a position
 func (la *LineArray) DeleteByte(pos Loc) {
-	la.lines[pos.Y] = la.lines[pos.Y][:pos.X+copy(la.lines[pos.Y][pos.X:], la.lines[pos.Y][pos.X+1:])]
+	la.lines[pos.Y].text = la.lines[pos.Y].text[:pos.X+copy(la.lines[pos.Y].text[pos.X:], la.lines[pos.Y].text[pos.X+1:])]
 }
 
 // Substr returns the string representation between two locations
 func (la *LineArray) Substr(start, end Loc) string {
-	startX := runeToByteIndex(start.X, la.lines[start.Y])
-	endX := runeToByteIndex(end.X, la.lines[end.Y])
+	startX := runeToByteIndex(start.X, la.lines[start.Y].text)
+	endX := runeToByteIndex(end.X, la.lines[end.Y].text)
 	if start.Y == end.Y {
-		return string(la.lines[start.Y][startX:endX])
+		return string(la.lines[start.Y].text[startX:endX])
 	}
 	var str string
-	str += string(la.lines[start.Y][startX:]) + "\n"
+	str += string(la.lines[start.Y].text[startX:]) + "\n"
 	for i := start.Y + 1; i <= end.Y-1; i++ {
-		str += string(la.lines[i]) + "\n"
+		str += string(la.lines[i].text) + "\n"
 	}
-	str += string(la.lines[end.Y][:endX])
+	str += string(la.lines[end.Y].text[:endX])
 	return str
 }
