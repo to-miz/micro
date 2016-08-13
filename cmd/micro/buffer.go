@@ -114,6 +114,10 @@ func NewBuffer(txt []byte, path string) *Buffer {
 		file.Close()
 	}
 
+	for i := range b.lines {
+		b.lines[i].Update(b.rules)
+	}
+
 	return b
 }
 
@@ -265,11 +269,14 @@ func (b *Buffer) insert(pos Loc, value []byte) {
 	b.IsModified = true
 	b.LineArray.insert(pos, value)
 	b.Update()
+	b.lines[pos.Y].Update(b.rules)
 }
 func (b *Buffer) remove(start, end Loc) string {
 	b.IsModified = true
 	sub := b.LineArray.remove(start, end)
 	b.Update()
+	b.lines[start.Y].Update(b.rules)
+	b.lines[start.Y+1].Update(b.rules)
 	return sub
 }
 

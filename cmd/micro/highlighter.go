@@ -404,78 +404,17 @@ func GetRules(buf *Buffer) ([]SyntaxRule, string) {
 	return nil, "Unknown"
 }
 
-// SyntaxMatches is an alias to a map from character numbers to styles,
-// so map[3] represents the style of the third character
-type SyntaxMatches [][]tcell.Style
-
-// Match takes a buffer and returns the syntax matches: a 2d array specifying how it should be syntax highlighted
-// We match the rules from up `synLinesUp` lines and down `synLinesDown` lines
-func Match(v *View) SyntaxMatches {
-	buf := v.Buf
-	rules := v.Buf.rules
-
-	viewStart := v.Topline
-	viewEnd := v.Topline + v.height
-	if viewEnd > buf.NumLines {
-		viewEnd = buf.NumLines
-	}
-
-	lines := buf.Lines(viewStart, viewEnd)
-	matches := make(SyntaxMatches, len(lines))
-
-	for i, line := range lines {
-		matches[i] = make([]tcell.Style, len(line)+1)
-		for j, _ := range matches[i] {
-			matches[i][j] = defStyle
-		}
-	}
-
-	// We don't actually check the entire buffer, just from synLinesUp to synLinesDown
-	totalStart := v.Topline - synLinesUp
-	totalEnd := v.Topline + v.height + synLinesDown
-	if totalStart < 0 {
-		totalStart = 0
-	}
-	if totalEnd > buf.NumLines {
-		totalEnd = buf.NumLines
-	}
-
-	str := strings.Join(buf.Lines(totalStart, totalEnd), "\n")
-	startNum := ToCharPos(Loc{0, totalStart}, v.Buf)
-
-	toplineNum := ToCharPos(Loc{0, v.Topline}, v.Buf)
+func MatchLine(line string, rules []SyntaxRule) []tcell.Style {
+	matches := make([]tcell.Style, len(line))
 
 	for _, rule := range rules {
-		if rule.startend {
-			if indicies := rule.regex.FindAllStringIndex(str, -1); indicies != nil {
+		if !rule.startend {
+			if indicies := rule.regex.FindAllStringIndex(line, -1); indicies != nil {
 				for _, value := range indicies {
-					value[0] = runePos(value[0], str) + startNum
-					value[1] = runePos(value[1], str) + startNum
-					for i := value[0]; i < value[1]; i++ {
-						if i < toplineNum {
-							continue
-						}
-						loc := FromCharPos(i, buf)
-						colNum, lineNum := loc.X, loc.Y
-						if lineNum == -1 || colNum == -1 {
-							continue
-						}
-						lineNum -= viewStart
-						if lineNum >= 0 && lineNum < v.height {
-							matches[lineNum][colNum] = rule.style
-						}
-					}
-				}
-			}
-		} else {
-			for lineN, line := range lines {
-				if indicies := rule.regex.FindAllStringIndex(line, -1); indicies != nil {
-					for _, value := range indicies {
-						start := runePos(value[0], line)
-						end := runePos(value[1], line)
-						for i := start; i < end; i++ {
-							matches[lineN][i] = rule.style
-						}
+					start := runePos(value[0], line)
+					end := runePos(value[1], line)
+					for i := start; i < end; i++ {
+						matches[i] = rule.style
 					}
 				}
 			}
@@ -483,4 +422,87 @@ func Match(v *View) SyntaxMatches {
 	}
 
 	return matches
+}
+
+// SyntaxMatches is an alias to a map from character numbers to styles,
+// so map[3] represents the style of the third character
+type SyntaxMatches [][]tcell.Style
+
+// Match takes a buffer and returns the syntax matches: a 2d array specifying how it should be syntax highlighted
+// We match the rules from up `synLinesUp` lines and down `synLinesDown` lines
+func Match(v *View) SyntaxMatches {
+	// buf := v.Buf
+	// rules := v.Buf.rules
+	//
+	// viewStart := v.Topline
+	// viewEnd := v.Topline + v.height
+	// if viewEnd > buf.NumLines {
+	// 	viewEnd = buf.NumLines
+	// }
+	//
+	// lines := buf.Lines(viewStart, viewEnd)
+	// matches := make(SyntaxMatches, len(lines))
+	//
+	// for i, line := range lines {
+	// 	matches[i] = make([]tcell.Style, len(line)+1)
+	// 	for j := range matches[i] {
+	// 		matches[i][j] = defStyle
+	// 	}
+	// }
+	//
+	// // We don't actually check the entire buffer, just from synLinesUp to synLinesDown
+	// totalStart := v.Topline - synLinesUp
+	// totalEnd := v.Topline + v.height + synLinesDown
+	// if totalStart < 0 {
+	// 	totalStart = 0
+	// }
+	// if totalEnd > buf.NumLines {
+	// 	totalEnd = buf.NumLines
+	// }
+	//
+	// str := strings.Join(buf.Lines(totalStart, totalEnd), "\n")
+	// startNum := ToCharPos(Loc{0, totalStart}, v.Buf)
+	//
+	// toplineNum := ToCharPos(Loc{0, v.Topline}, v.Buf)
+	//
+	// for _, rule := range rules {
+	// 	if rule.startend {
+	// 		if indicies := rule.regex.FindAllStringIndex(str, -1); indicies != nil {
+	// 			for _, value := range indicies {
+	// 				value[0] = runePos(value[0], str) + startNum
+	// 				value[1] = runePos(value[1], str) + startNum
+	// 				for i := value[0]; i < value[1]; i++ {
+	// 					if i < toplineNum {
+	// 						continue
+	// 					}
+	// 					loc := FromCharPos(i, buf)
+	// 					colNum, lineNum := loc.X, loc.Y
+	// 					if lineNum == -1 || colNum == -1 {
+	// 						continue
+	// 					}
+	// 					lineNum -= viewStart
+	// 					if lineNum >= 0 && lineNum < v.height {
+	// 						matches[lineNum][colNum] = rule.style
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	} else {
+	// 		// for lineN, line := range lines {
+	// 		// 	if indicies := rule.regex.FindAllStringIndex(line, -1); indicies != nil {
+	// 		// 		for _, value := range indicies {
+	// 		// 			start := runePos(value[0], line)
+	// 		// 			end := runePos(value[1], line)
+	// 		// 			for i := start; i < end; i++ {
+	// 		// 				matches[lineN][i] = rule.style
+	// 		// 			}
+	// 		// 		}
+	// 		// 	}
+	// 		// }
+	// 	}
+	// }
+
+	// return matches
+
+	return nil
 }

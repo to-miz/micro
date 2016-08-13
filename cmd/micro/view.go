@@ -634,7 +634,8 @@ func (v *View) DisplayView() {
 
 			if settings["syntax"].(bool) {
 				// Syntax highlighting is enabled
-				highlightStyle = v.matches[viewLine][colN]
+				// highlightStyle = v.matches[viewLine][colN]
+				highlightStyle = v.Buf.lines[curLineN].colors[colN]
 			}
 
 			if v.Cursor.HasSelection() &&

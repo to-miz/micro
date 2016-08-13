@@ -33,6 +33,10 @@ type Line struct {
 	colors []tcell.Style
 }
 
+func (l *Line) Update(rules []SyntaxRule) {
+	l.colors = MatchLine(string(l.text), rules)
+}
+
 // A LineArray simply stores and array of lines and makes it easy to insert
 // and delete in it
 type LineArray struct {
