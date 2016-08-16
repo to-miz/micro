@@ -610,6 +610,11 @@ func (v *View) DisplayView() {
 				lineNumStyle = style
 			}
 
+			if settings["cursorline"].(bool) && tabs[curTab].curView == v.Num && !v.Cursor.HasSelection() && v.Cursor.Y == curLineN {
+				_, bg, _ := defStyle.Decompose()
+				lineNumStyle = lineNumStyle.Background(bg)
+			}
+
 			lineNum := strconv.Itoa(curLineN + 1)
 
 			// Write the spaces before the line number if necessary
