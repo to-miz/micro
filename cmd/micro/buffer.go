@@ -276,7 +276,9 @@ func (b *Buffer) remove(start, end Loc) string {
 	sub := b.LineArray.remove(start, end)
 	b.Update()
 	b.lines[start.Y].Update(b.rules)
-	b.lines[start.Y+1].Update(b.rules)
+	if start.Y+1 < len(b.lines) {
+		b.lines[start.Y+1].Update(b.rules)
+	}
 	return sub
 }
 
