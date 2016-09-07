@@ -40,6 +40,7 @@ To see more screenshots of micro, showcasing all of the default colorschemes, se
 * Copy and paste with the system clipboard
 * Small and simple
 * Easily configurable
+* Macros
 * Common editor things such as undo/redo, line numbers, unicode support...
 
 Although not yet implemented, I hope to add more features such as autocompletion ([#174](https://github.com/zyedidia/micro/issues/174)), and multiple cursors ([#5](https://github.com/zyedidia/micro/issues/5)) in the future.
@@ -60,6 +61,15 @@ On that page you'll see the nightly release, which contains binaries for micro w
 and you'll see all the stable releases with the corresponding binaries.
 
 If you'd like to see more information after installing micro, run `micro -version`.
+
+### Homebrew
+
+You can also install micro using Homebrew:
+
+```
+$ brew tap zyedidia/micro
+$ brew install micro
+```
 
 ### Building from source
 
@@ -139,3 +149,5 @@ a brief introduction to the more powerful configuration features micro offers.
 If you find any bugs, please report them! I am also happy to accept pull requests from anyone.
 
 You can use the Github issue tracker to report bugs, ask questions, or suggest new features.
+
+For a more informal setting to discuss the editor, you can join the [Gitter chat](https://gitter.im/zyedidia/micro).

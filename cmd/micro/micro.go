@@ -306,6 +306,8 @@ func main() {
 	L.SetGlobal("HandleCommand", luar.New(L, HandleCommand))
 	L.SetGlobal("HandleShellCommand", luar.New(L, HandleShellCommand))
 	L.SetGlobal("GetLeadingWhitespace", luar.New(L, GetLeadingWhitespace))
+	L.SetGlobal("MakeCompletion", luar.New(L, MakeCompletion))
+	L.SetGlobal("NewBuffer", luar.New(L, NewBuffer))
 
 	// Used for asynchronous jobs
 	L.SetGlobal("JobStart", luar.New(L, JobStart))
@@ -365,7 +367,7 @@ func main() {
 					// we copy it to the clipboard.
 					// Often error messages are displayed down there so it can be useful to easily
 					// copy the message
-					clipboard.WriteAll(messenger.message)
+					clipboard.WriteAll(messenger.message, "primary")
 					continue
 				}
 
